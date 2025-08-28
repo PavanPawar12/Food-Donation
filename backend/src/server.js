@@ -4,7 +4,8 @@ import cors from "cors";
 import connectDB from './config/db.js'
 import router from './routes/authRoutes.js'
 import router1 from './routes/foodRoutes.js';
-import router2 from './routes/ngoRoutes.js';
+import router2 from './routes/ngoRoutes.js'
+;
 
 const app = express()
 
