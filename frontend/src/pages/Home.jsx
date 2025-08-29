@@ -1,5 +1,5 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { 
   FaHandHoldingHeart, 
   FaHandsHelping, 
@@ -15,6 +15,22 @@ import {
 import foodDistributionImage from "../assets/landing_image.jpg";
 
 export default function Home() {
+  const navigate = useNavigate();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const isLoggedIn = useMemo(() => {
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
+    return !!token && !!user;
+  }, []);
+
+  const handleProtectedNav = (path) => (e) => {
+    if (!isLoggedIn) {
+      e.preventDefault();
+      setShowAuthModal(true);
+      return;
+    }
+    navigate(path);
+  };
   const testimonials = [
     {
       id: 1,
@@ -99,13 +115,15 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4 mb-12">
                 <Link
-                  to="/donations"
+                  to="/donate"
+                  onClick={handleProtectedNav('/donate')}
                   className="bg-gradient-to-r from-yellow-500 to-orange-500 text-gray-800 px-8 py-4 rounded-lg font-bold text-lg hover:from-yellow-400 hover:to-orange-400 transition-all duration-300 transform hover:scale-105 shadow-2xl"
                 >
                   Donate Food
                 </Link>
                 <Link
-                  to="/requests"
+                  to="/request"
+                  onClick={handleProtectedNav('/request')}
                   className="bg-white/20 backdrop-blur-sm text-white border-2 border-white/30 px-8 py-4 rounded-lg font-bold text-lg hover:bg-white/30 transition-all duration-300 transform hover:scale-105 shadow-2xl"
                 >
                   Request Food
@@ -187,6 +205,35 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Please login or register to continue.</h3>
+            <p className="text-sm text-gray-600 mb-6">You need an account to donate or request food.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate('/login')}
+                className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => navigate('/register')}
+                className="flex-1 bg-gray-100 text-indigo-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors border border-gray-200"
+              >
+                Register
+              </button>
+            </div>
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="mt-4 w-full text-sm text-gray-500 hover:text-gray-700"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* How It Works Section */}
       <section className="py-20 bg-gradient-to-br from-gray-50 to-white">
@@ -330,7 +377,7 @@ export default function Home() {
               <FaArrowRight />
             </Link>
             <Link
-              to="/donations"
+              to="/donate"
               className="border-2 border-white/30 text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-white/10 transition-all duration-300 transform hover:scale-105 backdrop-blur-sm"
             >
               Browse Donations

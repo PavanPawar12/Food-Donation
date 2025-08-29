@@ -42,15 +42,6 @@ const Navbar = () => {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="hover:text-yellow-300 transition-colors duration-200">
-              Home
-            </Link>
-            <Link to="/donations" className="hover:text-yellow-300 transition-colors duration-200">
-              Donate Food
-            </Link>
-            <Link to="/requests" className="hover:text-yellow-300 transition-colors duration-200">
-              Request Food
-            </Link>
             {isLoggedIn && (
               <Link to="/dashboard" className="hover:text-yellow-300 transition-colors duration-200">
                 Dashboard
@@ -83,7 +74,7 @@ const Navbar = () => {
                 </button>
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                   <Link
-                    to="/profile"
+                    to="/dashboard/profile"
                     className="block px-4 py-2 text-indigo-700 hover:bg-indigo-50 rounded-t-lg"
                   >
                     Profile
@@ -116,27 +107,6 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden bg-gradient-to-b from-indigo-600 to-blue-600 border-t border-indigo-500">
           <div className="px-2 pt-2 pb-3 space-y-1">
-            <Link
-              to="/"
-              className="block px-3 py-2 rounded-md text-white hover:text-yellow-300 hover:bg-indigo-500 transition-colors duration-200"
-              onClick={() => setIsOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              to="/donations"
-              className="block px-3 py-2 rounded-md text-white hover:text-yellow-300 hover:bg-indigo-500 transition-colors duration-200"
-              onClick={() => setIsOpen(false)}
-            >
-              Donate Food
-            </Link>
-            <Link
-              to="/requests"
-              className="block px-3 py-2 rounded-md text-white hover:text-yellow-300 hover:bg-indigo-500 transition-colors duration-200"
-              onClick={() => setIsOpen(false)}
-            >
-              Request Food
-            </Link>
             {isLoggedIn && (
               <>
                 <Link
@@ -147,7 +117,7 @@ const Navbar = () => {
                   Dashboard
                 </Link>
                 <Link
-                  to="/profile"
+                  to="/dashboard/profile"
                   className="block px-3 py-2 rounded-md text-white hover:text-yellow-300 hover:bg-indigo-500 transition-colors duration-200"
                   onClick={() => setIsOpen(false)}
                 >

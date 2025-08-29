@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaEdit, FaSave, FaTimes } from "react-icons/fa";
 import { toast } from "react-toastify";
 
 const Profile = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({
@@ -67,11 +69,31 @@ const Profile = () => {
     setIsEditing(false);
   };
 
+  const [donationStats, setDonationStats] = useState({ totalDonations: 0, availableDonations: 0, claimedDonations: 0, pickedUpDonations: 0, totalMeals: 0 });
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    // fetch donor stats
+    import("../api/api").then(({ default: api }) => {
+      api.get('/donations/stats').then((res) => {
+        const s = res?.data?.data?.stats || {};
+        setDonationStats({
+          totalDonations: s.totalDonations || 0,
+          availableDonations: s.availableDonations || 0,
+          claimedDonations: s.claimedDonations || 0,
+          pickedUpDonations: s.pickedUpDonations || 0,
+          totalMeals: s.totalMeals || 0,
+        });
+      }).catch(() => {});
+    });
+  }, []);
+
   const stats = [
-    { label: "Total Donations", value: "24", color: "text-green-600" },
-    { label: "Meals Delivered", value: "156", color: "text-blue-600" },
-    { label: "People Helped", value: "89", color: "text-purple-600" },
-    { label: "Impact Score", value: "92%", color: "text-yellow-600" }
+    { label: "Total Donations", value: String(donationStats.totalDonations), color: "text-green-600" },
+    { label: "Available", value: String(donationStats.availableDonations), color: "text-blue-600" },
+    { label: "Claimed", value: String(donationStats.claimedDonations), color: "text-purple-600" },
+    { label: "Picked Up", value: String(donationStats.pickedUpDonations), color: "text-yellow-600" }
   ];
 
   if (!user) {
@@ -337,11 +359,11 @@ const Profile = () => {
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="space-y-3">
-                <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-green-50 text-green-700 transition-colors duration-200">
+                <button onClick={() => navigate('/donations/new')} className="w-full text-left px-4 py-2 rounded-lg hover:bg-green-50 text-green-700 transition-colors duration-200">
                   → Post New Donation
                 </button>
-                <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-blue-50 text-blue-700 transition-colors duration-200">
-                  → View My Donations
+                <button onClick={() => navigate('/donations/mine')} className="w-full text-left px-4 py-2 rounded-lg hover:bg-blue-50 text-blue-700 transition-colors duration-200">
+                  → View My Donations ({donationStats.totalDonations})
                 </button>
                 <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-purple-50 text-purple-700 transition-colors duration-200">
                   → Download Impact Report

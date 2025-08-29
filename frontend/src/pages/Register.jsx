@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash, FaBuilding, FaMapMarkerAlt, FaPhone } from "react-icons/fa";
 import { toast } from "react-toastify";
+import api from "../api/api";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -62,59 +63,34 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Store user data in localStorage
-      const userData = {
-        id: Date.now(),
+      const payload = {
         name: formData.name,
         email: formData.email,
+        password: formData.password,
         userType: formData.userType,
-        organization: formData.organization,
-        phone: formData.phone,
-        address: formData.address,
-        registeredAt: new Date().toISOString(),
-        stats: {
-          totalDonations: 0,
-          totalMeals: 0,
-          impactScore: 0
-        }
+        organization: formData.userType === "ngo" ? formData.organization : undefined,
+        phone: formData.phone || undefined,
+        address: formData.address ? { street: formData.address } : undefined
       };
 
-      localStorage.setItem("user", JSON.stringify(userData));
-      localStorage.setItem("token", "dummy-token-" + Date.now());
+      const res = await api.post("/auth/register", payload);
+      const data = res?.data?.data;
 
-      // Add to recent registrations for real-time dashboard
-      const recentRegistrations = JSON.parse(localStorage.getItem("recentRegistrations") || "[]");
-      recentRegistrations.unshift({
-        id: userData.id,
-        name: userData.name,
-        type: userData.userType === "donor" ? "Individual" : "NGO",
-        time: "Just now",
-        location: userData.address || "Unknown"
-      });
-      
-      // Keep only last 10 registrations
-      if (recentRegistrations.length > 10) {
-        recentRegistrations.splice(10);
-      }
-      
-      localStorage.setItem("recentRegistrations", JSON.stringify(recentRegistrations));
-
-      toast.success(`Welcome ${formData.name}! Registration successful!`);
-      
-      // Redirect based on user type
-      setTimeout(() => {
-        if (formData.userType === "donor") {
+      if (data?.token && data?.user) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        toast.success(`Welcome ${data.user.name}! Registration successful!`);
+        // Redirect based on user type
+        if (data.user.userType === "donor") {
           navigate("/dashboard");
         } else {
-          navigate("/requests");
+          navigate("/dashboard/requests");
         }
-      }, 1000);
-
+      } else {
+        toast.error("Invalid response from server");
+      }
     } catch (error) {
-      toast.error("Registration failed. Please try again.");
+      toast.error(error?.response?.data?.message || "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }

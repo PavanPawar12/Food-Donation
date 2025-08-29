@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FaEye, FaEyeSlash, FaEnvelope, FaLock, FaHeart } from "react-icons/fa";
 import { toast } from "react-toastify";
+import api from "../api/api";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -24,24 +25,19 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const res = await fetch("http://localhost:8000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      
-      const data = await res.json();
-      
-      if (res.ok) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
+      const res = await api.post("/auth/login", form);
+      const payload = res?.data?.data;
+      if (payload?.token && payload?.user) {
+        localStorage.setItem("token", payload.token);
+        localStorage.setItem("user", JSON.stringify(payload.user));
         toast.success("Login successful! Welcome back!");
         navigate("/dashboard");
       } else {
-        toast.error(data.message || "Login failed. Please check your credentials.");
+        toast.error("Invalid response from server");
       }
     } catch (error) {
-      toast.error("Network error. Please try again.");
+      const msg = error?.response?.data?.message || "Login failed. Please check your credentials.";
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }

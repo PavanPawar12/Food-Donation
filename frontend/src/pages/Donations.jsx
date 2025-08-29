@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaPlus, FaSearch, FaFilter, FaMapMarkerAlt, FaClock, FaUtensils } from "react-icons/fa";
 import { toast } from "react-toastify";
+import api from "../api/api";
 
 const Donations = () => {
   const [showForm, setShowForm] = useState(false);
@@ -13,60 +14,55 @@ const Donations = () => {
     quantity: "",
     expiryDate: "",
     location: "",
+    latitude: "",
+    longitude: "",
+    addressStreet: "",
+    addressCity: "",
+    addressState: "",
+    addressZip: "",
+    addressCountry: "",
     contactPhone: "",
     allergens: "",
     packaging: "packaged"
   });
   const [isLoading, setIsLoading] = useState(false);
 
+  const mapDonationToCard = (d) => ({
+    id: d._id,
+    title: d.title,
+    description: d.description,
+    quantity: `${d.quantity?.amount || 0} ${d.quantity?.unit || "items"}`,
+    expiryDate: d.expiryTime ? new Date(d.expiryTime).toLocaleDateString() : "",
+    location: d.location?.address?.street || d.fullAddress || "",
+    contactPhone: d.donor?.phone || "",
+    allergens: (d.allergens || []).filter(a => a !== "none").join(", "),
+    packaging: form.packaging,
+    status: d.status || "available",
+    postedBy: d.donor?.organization || d.donor?.name || "Donor",
+    postedAt: new Date(d.createdAt).toLocaleString()
+  });
+
   useEffect(() => {
-    // Simulate loading donations
-    setTimeout(() => {
-      setDonations([
-        {
-          id: 1,
-          title: "Fresh Bread & Pastries",
-          description: "Freshly baked bread and pastries from local bakery",
-          quantity: "20 pieces",
-          expiryDate: "2024-01-15",
-          location: "Downtown Bakery, Main St",
-          contactPhone: "+1 234-567-8900",
-          allergens: "Gluten, Dairy",
-          packaging: "packaged",
-          status: "available",
-          postedBy: "John's Bakery",
-          postedAt: "2 hours ago"
-        },
-        {
-          id: 2,
-          title: "Vegetarian Meals",
-          description: "Healthy vegetarian meals prepared with fresh ingredients",
-          quantity: "15 meals",
-          expiryDate: "2024-01-14",
-          location: "Community Kitchen, Oak Ave",
-          contactPhone: "+1 234-567-8901",
-          allergens: "Nuts",
-          packaging: "containers",
-          status: "claimed",
-          postedBy: "Green Eats",
-          postedAt: "4 hours ago"
-        },
-        {
-          id: 3,
-          title: "Fruits & Vegetables",
-          description: "Fresh fruits and vegetables from local market",
-          quantity: "10 kg",
-          expiryDate: "2024-01-16",
-          location: "Farmers Market, Park Rd",
-          contactPhone: "+1 234-567-8902",
-          allergens: "None",
-          packaging: "loose",
-          status: "available",
-          postedBy: "Fresh Harvest",
-          postedAt: "1 day ago"
-        }
-      ]);
-    }, 1000);
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const { data } = await api.get("/donations", { params: { page: 1, limit: 12 } });
+        const items = (data?.data?.donations || []).map(mapDonationToCard);
+        setDonations(items);
+      } catch (e) {
+        toast.error("Failed to load donations");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
+    // open form when on /donations/new
+    if (typeof window !== 'undefined' && window.location.pathname.endsWith('/donations/new')) {
+      setShowForm(true);
+    }
   }, []);
 
   const handleSubmit = async (e) => {
@@ -74,32 +70,78 @@ const Donations = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const newDonation = {
-        id: donations.length + 1,
-        ...form,
-        status: "available",
-        postedBy: "You",
-        postedAt: "Just now"
+      // Build backend payload from form
+      const amountMatch = /\d+/.exec(form.quantity || "0");
+      const amount = amountMatch ? parseInt(amountMatch[0], 10) : 0;
+      const rawUnit = (form.quantity || "pieces").replace(/\d+/g, "").trim().toLowerCase();
+      const allowedUnits = ["meals","pounds","kilograms","pieces","servings","containers"];
+      const unit = allowedUnits.includes(rawUnit) ? rawUnit : "pieces";
+
+      const now = new Date();
+      const prepISO = now.toISOString();
+      const expISO = form.expiryDate ? new Date(form.expiryDate + "T23:59:59").toISOString() : new Date(now.getTime() + 24*60*60*1000).toISOString();
+      const pickupStart = new Date(now.getTime() + 2*60*60*1000).toISOString();
+      const pickupEnd = new Date(now.getTime() + 6*60*60*1000).toISOString();
+
+      const lat = parseFloat(form.latitude);
+      const lng = parseFloat(form.longitude);
+      const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+
+      const payload = {
+        title: form.title,
+        description: form.description,
+        foodType: form.packaging === "packaged" ? "packaged" : "cooked",
+        quantity: { amount, unit },
+        allergens: form.allergens ? form.allergens.split(",").map(s => s.trim()).filter(Boolean) : ["none"],
+        dietaryRestrictions: ["none"],
+        preparationTime: prepISO,
+        expiryTime: expISO,
+        pickupTime: { start: pickupStart, end: pickupEnd },
+        location: {
+          address: {
+            street: form.addressStreet || form.location,
+            city: form.addressCity || undefined,
+            state: form.addressState || undefined,
+            zipCode: form.addressZip || undefined,
+            country: form.addressCountry || undefined
+          },
+          coordinates: hasCoords ? { type: "Point", coordinates: [lng, lat] } : { type: "Point", coordinates: [-74.006, 40.7128] }
+        },
+        notes: ""
       };
-      
-      setDonations([newDonation, ...donations]);
-      setForm({
-        title: "",
-        description: "",
-        quantity: "",
-        expiryDate: "",
-        location: "",
-        contactPhone: "",
-        allergens: "",
-        packaging: "packaged"
-      });
-      setShowForm(false);
-      toast.success("Donation posted successfully!");
+
+      const { data } = await api.post("/donations", payload);
+      const created = data?.data?.donation;
+      if (created?._id) {
+        setDonations(prev => [mapDonationToCard(created), ...prev]);
+        setForm({
+          title: "",
+          description: "",
+          quantity: "",
+          expiryDate: "",
+          location: "",
+          latitude: "",
+          longitude: "",
+          addressStreet: "",
+          addressCity: "",
+          addressState: "",
+          addressZip: "",
+          addressCountry: "",
+          contactPhone: "",
+          allergens: "",
+          packaging: "packaged"
+        });
+        setShowForm(false);
+        toast.success("Donation posted successfully!");
+        // redirect donor back to profile to see updated stats/CTA
+        setTimeout(() => {
+          if (typeof window !== 'undefined') window.location.href = '/dashboard/profile';
+        }, 500);
+      } else {
+        toast.error("Failed to post donation");
+      }
     } catch (error) {
-      toast.error("Failed to post donation. Please try again.");
+      toast.error(error?.response?.data?.message || "Failed to post donation. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -107,6 +149,59 @@ const Donations = () => {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const reverseGeocode = async (lat, lng) => {
+    try {
+      const apiKey = import.meta?.env?.VITE_GOOGLE_MAPS_API_KEY;
+      if (!apiKey) return null;
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.status !== 'OK') return null;
+      const result = data.results?.[0];
+      const formatted = result?.formatted_address || '';
+      const components = result?.address_components || [];
+      const get = (type) => components.find(c => c.types.includes(type))?.long_name || '';
+      return {
+        formatted,
+        street: `${get('street_number')} ${get('route')}`.trim() || formatted,
+        city: get('locality') || get('administrative_area_level_2'),
+        state: get('administrative_area_level_1'),
+        zip: get('postal_code'),
+        country: get('country')
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const handleShareLocation = async () => {
+    if (!navigator.geolocation) {
+      return toast.error("Geolocation is not supported by your browser.");
+    }
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      setForm((f) => ({ ...f, latitude: String(lat), longitude: String(lng) }));
+      const geo = await reverseGeocode(lat, lng);
+      if (geo) {
+        setForm((f) => ({
+          ...f,
+          location: geo.formatted,
+          addressStreet: geo.street,
+          addressCity: geo.city,
+          addressState: geo.state,
+          addressZip: geo.zip,
+          addressCountry: geo.country
+        }));
+      } else {
+        toast.info("Location captured. Could not resolve full address.");
+      }
+      toast.success("Location captured from your device.");
+    }, (err) => {
+      toast.error(err?.message || "Failed to get current location.");
+    }, { enableHighAccuracy: true, timeout: 10000 });
   };
 
   const filteredDonations = donations.filter(donation => {
@@ -304,6 +399,21 @@ const Donations = () => {
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                         placeholder="e.g., Downtown Bakery, Main St"
                       />
+                      <div className="mt-3 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={handleShareLocation}
+                          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                        >
+                          Share Current Location
+                        </button>
+                        {form.latitude && form.longitude && (
+                          <span className="text-sm text-gray-600">Lat: {form.latitude} , Lng: {form.longitude}</span>
+                        )}
+                      </div>
+                      {/* Hidden fields for coordinates */}
+                      <input type="hidden" name="latitude" value={form.latitude} readOnly />
+                      <input type="hidden" name="longitude" value={form.longitude} readOnly />
                     </div>
 
                     <div className="md:col-span-2">
@@ -375,13 +485,17 @@ const Donations = () => {
         )}
 
         {/* Donations Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredDonations.map((donation) => (
-            <DonationCard key={donation.id} donation={donation} />
-          ))}
-        </div>
+        {isLoading && donations.length === 0 ? (
+          <div className="text-center py-12">Loading...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredDonations.map((donation) => (
+              <DonationCard key={donation.id} donation={donation} />
+            ))}
+          </div>
+        )}
 
-        {filteredDonations.length === 0 && (
+        {filteredDonations.length === 0 && !isLoading && (
           <div className="text-center py-12">
             <FaUtensils className="text-6xl text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-medium text-gray-900 mb-2">No donations found</h3>

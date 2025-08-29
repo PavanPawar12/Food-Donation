@@ -73,16 +73,16 @@ const Sidebar = () => {
     setUser(null);
     setShowUserContext(false);
     toast.success("Logged out successfully!");
+    window.location.href = "/";
   };
 
   const menuItems = [
-    { path: "/", icon: FaHome, label: "Home", badge: null },
-    { path: "/dashboard", icon: FaChartLine, label: "Dashboard", badge: null },
-    { path: "/realtime", icon: FaCircle, label: "Real-time", badge: null },
-    { path: "/donations", icon: FaDonate, label: "Donations", badge: liveStats.activeDonations },
-    { path: "/requests", icon: FaSearch, label: "Requests", badge: liveStats.pendingRequests },
-    { path: "/analytics", icon: FaChartLine, label: "Analytics", badge: null },
-    { path: "/profile", icon: FaUser, label: "Profile", badge: null }
+    { path: "/dashboard", icon: FaHome, label: "Dashboard", badge: null },
+    { path: "/dashboard/realtime", icon: FaCircle, label: "Real-time", badge: null },
+    { path: "/dashboard/donations", icon: FaDonate, label: "Donations", badge: liveStats.activeDonations },
+    { path: "/dashboard/requests", icon: FaSearch, label: "Requests", badge: liveStats.pendingRequests },
+    { path: "/dashboard/analytics", icon: FaChartLine, label: "Analytics", badge: null },
+    { path: "/dashboard/profile", icon: FaUser, label: "Profile", badge: null }
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -101,7 +101,7 @@ const Sidebar = () => {
       </button>
         </div>
 
-      {/* Logo */}
+              {/* Logo */}
         <div className="px-4 mb-6">
           {!isCollapsed ? (
             <div className="flex items-center space-x-2">
@@ -113,6 +113,17 @@ const Sidebar = () => {
               <FaHandHoldingHeart className="text-2xl text-indigo-600" />
             </div>
           )}
+        </div>
+        
+        {/* Back to Home Link */}
+        <div className="px-4 mb-4">
+          <Link
+            to="/"
+            className="flex items-center text-sm text-indigo-600 hover:text-indigo-700 transition-colors"
+          >
+            <FaArrowLeft className="mr-2" />
+            {!isCollapsed && <span>Back to Home</span>}
+          </Link>
         </div>
 
         {/* Real-time Stats */}
@@ -320,7 +331,7 @@ const Sidebar = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="space-y-2">
                 <Link
-                  to="/profile"
+                  to="/dashboard/profile"
                   className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <FaEdit className="text-indigo-600" />
@@ -328,7 +339,7 @@ const Sidebar = () => {
                 </Link>
                 {user?.userType === "donor" ? (
                   <Link
-                    to="/donations"
+                    to="/dashboard/donations"
                     className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <FaDonate className="text-green-600" />
@@ -336,7 +347,7 @@ const Sidebar = () => {
                   </Link>
                 ) : (
                   <Link
-                    to="/requests"
+                    to="/dashboard/requests"
                     className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <FaSearch className="text-blue-600" />
@@ -344,7 +355,7 @@ const Sidebar = () => {
                   </Link>
                 )}
                 <Link
-                  to="/analytics"
+                  to="/dashboard/analytics"
                   className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <FaChartLine className="text-purple-600" />
