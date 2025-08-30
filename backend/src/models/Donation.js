@@ -83,6 +83,11 @@ const donationSchema = new mongoose.Schema({
         required: true
       }
     },
+    formattedAddress: {
+      type: String,
+      trim: true,
+      maxlength: [500, 'Formatted address cannot exceed 500 characters']
+    },
     pickupInstructions: {
       type: String,
       trim: true,

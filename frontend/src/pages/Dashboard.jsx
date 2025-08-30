@@ -5,7 +5,6 @@ import {
   FaUtensils, 
   FaHandHoldingHeart, 
   FaUsers, 
-  FaChartLine,
   FaPlus,
   FaSearch,
   FaBell,

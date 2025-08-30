@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { FaPlus, FaSearch, FaFilter, FaMapMarkerAlt, FaClock, FaUtensils } from "react-icons/fa";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 import api from "../api/api";
+import GoogleMapReact from "../components/GoogleMapReact";
 
 const Donations = () => {
+  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [donations, setDonations] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -26,6 +29,7 @@ const Donations = () => {
     packaging: "packaged"
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
   const mapDonationToCard = (d) => ({
     id: d._id,
@@ -33,7 +37,7 @@ const Donations = () => {
     description: d.description,
     quantity: `${d.quantity?.amount || 0} ${d.quantity?.unit || "items"}`,
     expiryDate: d.expiryTime ? new Date(d.expiryTime).toLocaleDateString() : "",
-    location: d.location?.address?.street || d.fullAddress || "",
+    location: d.location?.formattedAddress || d.location?.address?.street || d.fullAddress || "Location not specified",
     contactPhone: d.donor?.phone || "",
     allergens: (d.allergens || []).filter(a => a !== "none").join(", "),
     packaging: form.packaging,
@@ -65,8 +69,42 @@ const Donations = () => {
     }
   }, []);
 
+  // Debug: Monitor selectedLocation changes
+  useEffect(() => {
+    console.log('Donations - selectedLocation changed:', selectedLocation);
+  }, [selectedLocation]);
+
+  // Debug: Monitor form state changes
+  useEffect(() => {
+    console.log('Donations - form state changed:', {
+      latitude: form.latitude,
+      longitude: form.longitude,
+      location: form.location
+    });
+  }, [form.latitude, form.longitude, form.location]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Debug logging
+    console.log('Form submission - selectedLocation:', selectedLocation);
+    console.log('Form submission - form.latitude:', form.latitude);
+    console.log('Form submission - form.longitude:', form.longitude);
+    
+         // Validate that a location has been selected
+     if (!selectedLocation || !form.latitude || !form.longitude) {
+       let errorMsg = "Please select a location on the map before submitting. ";
+       if (!selectedLocation) errorMsg += "No location selected. ";
+       if (!form.latitude) errorMsg += "Latitude missing. ";
+       if (!form.longitude) errorMsg += "Longitude missing. ";
+       
+       toast.error(errorMsg);
+       console.log('Validation failed - selectedLocation:', selectedLocation);
+       console.log('Validation failed - latitude:', form.latitude);
+       console.log('Validation failed - longitude:', form.longitude);
+       return;
+     }
+    
     setIsLoading(true);
 
     try {
@@ -105,7 +143,8 @@ const Donations = () => {
             zipCode: form.addressZip || undefined,
             country: form.addressCountry || undefined
           },
-          coordinates: hasCoords ? { type: "Point", coordinates: [lng, lat] } : { type: "Point", coordinates: [-74.006, 40.7128] }
+          coordinates: hasCoords ? { type: "Point", coordinates: [lng, lat] } : { type: "Point", coordinates: [-74.006, 40.7128] },
+          formattedAddress: selectedLocation?.formattedAddress || form.location
         },
         notes: ""
       };
@@ -131,6 +170,7 @@ const Donations = () => {
           allergens: "",
           packaging: "packaged"
         });
+        setSelectedLocation(null);
         setShowForm(false);
         toast.success("Donation posted successfully!");
         // redirect donor back to profile to see updated stats/CTA
@@ -149,6 +189,43 @@ const Donations = () => {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleLocationSelect = (locationData) => {
+    console.log('Donations - handleLocationSelect called with:', locationData);
+    setSelectedLocation(locationData);
+    
+    // Parse address components
+    const parseAddressComponents = (components) => {
+      if (!components) return {};
+      
+      const getComponent = (type) => {
+        const component = components.find(c => c.types.includes(type));
+        return component ? component.long_name : '';
+      };
+
+      return {
+        street: `${getComponent('street_number')} ${getComponent('route')}`.trim(),
+        city: getComponent('locality') || getComponent('administrative_area_level_2'),
+        state: getComponent('administrative_area_level_1'),
+        zipCode: getComponent('postal_code'),
+        country: getComponent('country')
+      };
+    };
+
+    const addressComponents = parseAddressComponents(locationData.addressComponents);
+    
+    setForm(prev => ({
+      ...prev,
+      latitude: String(locationData.lat),
+      longitude: String(locationData.lng),
+      location: locationData.formattedAddress,
+      addressStreet: addressComponents.street || locationData.formattedAddress,
+      addressCity: addressComponents.city || '',
+      addressState: addressComponents.state || '',
+      addressZip: addressComponents.zipCode || '',
+      addressCountry: addressComponents.country || ''
+    }));
   };
 
   const reverseGeocode = async (lat, lng) => {
@@ -183,7 +260,11 @@ const Donations = () => {
     navigator.geolocation.getCurrentPosition(async (pos) => {
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
+      
+      // Update form with coordinates
       setForm((f) => ({ ...f, latitude: String(lat), longitude: String(lng) }));
+      
+      // Get address details
       const geo = await reverseGeocode(lat, lng);
       if (geo) {
         setForm((f) => ({
@@ -195,6 +276,14 @@ const Donations = () => {
           addressZip: geo.zip,
           addressCountry: geo.country
         }));
+        
+        // Update selected location for map display
+        setSelectedLocation({
+          lat,
+          lng,
+          formattedAddress: geo.formatted,
+          addressComponents: null
+        });
       } else {
         toast.info("Location captured. Could not resolve full address.");
       }
@@ -258,7 +347,10 @@ const Donations = () => {
           Posted by {donation.postedBy} • {donation.postedAt}
         </div>
         {donation.status === "available" && (
-          <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200">
+          <button 
+            onClick={() => navigate(`/donations/claim/${donation.id}`)}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200"
+          >
             Claim
           </button>
         )}
@@ -390,30 +482,76 @@ const Donations = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Location *
                       </label>
-                      <input
-                        type="text"
-                        name="location"
-                        required
-                        value={form.location}
-                        onChange={handleChange}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                        placeholder="e.g., Downtown Bakery, Main St"
-                      />
-                      <div className="mt-3 flex items-center gap-3">
-                        <button
-                          type="button"
-                          onClick={handleShareLocation}
-                          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                        >
-                          Share Current Location
-                        </button>
-                        {form.latitude && form.longitude && (
-                          <span className="text-sm text-gray-600">Lat: {form.latitude} , Lng: {form.longitude}</span>
-                        )}
+                      
+                      {/* Google Maps Component - Always Visible */}
+                      <div className="mb-4">
+                        <GoogleMapReact
+                          onLocationSelect={handleLocationSelect}
+                          initialLat={form.latitude ? parseFloat(form.latitude) : 16.7050}
+                          initialLng={form.longitude ? parseFloat(form.longitude) : 74.2433}
+                          height="350px"
+                          showSearch={true}
+                          showCurrentLocation={true}
+                          autoCenterOnUserLocation={true}
+                        />
                       </div>
-                      {/* Hidden fields for coordinates */}
-                      <input type="hidden" name="latitude" value={form.latitude} readOnly />
-                      <input type="hidden" name="longitude" value={form.longitude} readOnly />
+
+                      {/* Location Selection Instructions */}
+                      {!selectedLocation && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                          <h4 className="font-medium text-yellow-900 mb-2">📍 Select Location:</h4>
+                          <p className="text-sm text-yellow-800">
+                            Please click on the map above, drag the marker, or use the search box to select a location for your donation.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Selected Location Display */}
+                      {selectedLocation && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+                          <h4 className="font-medium text-green-900 mb-2">✅ Location Selected:</h4>
+                          <p className="text-sm text-green-800">
+                            <strong>Address:</strong> {selectedLocation.formattedAddress}
+                          </p>
+                          <p className="text-sm text-green-700">
+                            <strong>Coordinates:</strong> {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+                          </p>
+                        </div>
+                      )}
+
+                                             {/* Hidden fields for coordinates */}
+                       <input type="hidden" name="latitude" value={form.latitude} readOnly />
+                       <input type="hidden" name="longitude" value={form.longitude} readOnly />
+                       
+                       {/* Debug Info */}
+                       <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
+                         <h4 className="font-medium text-gray-900 mb-2">🔍 Debug Info:</h4>
+                         <div className="text-xs text-gray-600 space-y-1">
+                           <p><strong>selectedLocation:</strong> {selectedLocation ? 'Set' : 'Not Set'}</p>
+                           <p><strong>form.latitude:</strong> {form.latitude || 'Not Set'}</p>
+                           <p><strong>form.longitude:</strong> {form.longitude || 'Not Set'}</p>
+                         </div>
+                         
+                         {/* Manual Location Button */}
+                         {!selectedLocation && (
+                           <button
+                             type="button"
+                             onClick={() => {
+                               const testLocation = {
+                                 lat: 16.7050,
+                                 lng: 74.2433,
+                                 formattedAddress: "Kolhapur, Maharashtra, India",
+                                 addressComponents: []
+                               };
+                               handleLocationSelect(testLocation);
+                               toast.success("Test location set (Kolhapur)");
+                             }}
+                             className="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                           >
+                             Set Test Location (Kolhapur)
+                           </button>
+                         )}
+                       </div>
                     </div>
 
                     <div className="md:col-span-2">

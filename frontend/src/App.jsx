@@ -7,13 +7,18 @@ import Dashboard from './pages/Dashboard'
 import Donations from './pages/Donations'
 import Requests from './pages/Requests'
 import Profile from './pages/Profile'
-import Analytics from './pages/Analytics'
-import RealtimeDashboard from './pages/RealtimeDashboard'
+
 import LandingLayout from './layouts/LandingLayout'
 import DashboardLayout from './layouts/DashboardLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import Claimed from './pages/Claimed'
 import MyDonations from './pages/MyDonations'
+import ClaimDonation from './pages/ClaimDonation'
+import MapExamples from './components/MapExamples'
+import MapTest from './components/MapTest'
+import GoogleMapsTest from './components/GoogleMapsTest'
+import LocationDebug from './components/LocationDebug'
+import SimpleLocationTest from './components/SimpleLocationTest'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
@@ -28,6 +33,11 @@ const App = () => {
           <Route path="register" element={<Register />} />
           <Route path="donate" element={<Donations />} />
           <Route path="request" element={<Requests />} />
+          <Route path="map-examples" element={<MapExamples />} />
+          <Route path="map-test" element={<MapTest />} />
+          <Route path="api-test" element={<GoogleMapsTest />} />
+          <Route path="location-debug" element={<LocationDebug />} />
+          <Route path="simple-test" element={<SimpleLocationTest />} />
         </Route>
 
         {/* Protected Dashboard Routes */}
@@ -37,21 +47,12 @@ const App = () => {
           </ProtectedRoute>
         }>
           <Route index element={<Dashboard />} />
-          <Route path="realtime" element={<RealtimeDashboard />} />
           <Route path="donations" element={<Donations />} />
           <Route path="requests" element={<Requests />} />
           <Route path="profile" element={<Profile />} />
-          <Route path="analytics" element={<Analytics />} />
         </Route>
 
-        {/* Legacy routes for backward compatibility */}
-        <Route path="/realtime" element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }>
-          <Route index element={<RealtimeDashboard />} />
-        </Route>
+
         
         <Route path="/claimed" element={
           <ProtectedRoute>
@@ -68,6 +69,7 @@ const App = () => {
         }>
           <Route index element={<Donations />} />
           <Route path="new" element={<Donations />} />
+          <Route path="claim/:donationId" element={<ClaimDonation />} />
         </Route>
         
         <Route path="/donations/mine" element={
@@ -94,13 +96,7 @@ const App = () => {
           <Route index element={<Profile />} />
         </Route>
         
-        <Route path="/analytics" element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }>
-          <Route index element={<Analytics />} />
-        </Route>
+
       </Routes>
 
       <ToastContainer 

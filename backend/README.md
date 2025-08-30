@@ -8,7 +8,7 @@ A comprehensive Node.js + Express + MongoDB backend for the ShareButes food dona
 - **User Management**: Support for donors and NGOs with different permissions
 - **Food Donations**: Complete CRUD operations for food donations with location-based search
 - **Food Requests**: NGO food request management with urgency levels
-- **Real-time Statistics**: User impact tracking and donation analytics
+- **Statistics**: User impact tracking and donation metrics
 - **Location Services**: Geospatial queries for nearby donations and requests
 - **Security**: Protected routes, input validation, and error handling
 
@@ -257,11 +257,11 @@ Authorization: Bearer <your-jwt-token>
 - Radius-based search (configurable in miles)
 - Coordinate-based filtering
 
-### Statistics & Analytics
+### Statistics
 - User impact tracking
 - Monthly donation/request statistics
 - Beneficiary count tracking
-- Urgency level analytics
+- Urgency level metrics
 
 ### Real-time Updates
 - Live status updates
@@ -325,7 +325,7 @@ All errors return consistent JSON responses with appropriate HTTP status codes.
 - **File Upload**: Image upload for donations
 - **Notifications**: Real-time notifications system
 - **Email Service**: Automated email notifications
-- **Analytics Dashboard**: Advanced reporting and analytics
+- **Advanced Reporting**: Enhanced reporting and metrics
 - **Mobile App API**: Optimized endpoints for mobile applications
 
 ## 📝 License

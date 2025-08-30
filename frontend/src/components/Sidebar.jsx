@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import { 
   FaHandHoldingHeart, 
   FaUsers, 
-  FaChartLine, 
   FaTrophy,
   FaBell,
   FaCog,
@@ -78,10 +77,8 @@ const Sidebar = () => {
 
   const menuItems = [
     { path: "/dashboard", icon: FaHome, label: "Dashboard", badge: null },
-    { path: "/dashboard/realtime", icon: FaCircle, label: "Real-time", badge: null },
     { path: "/dashboard/donations", icon: FaDonate, label: "Donations", badge: liveStats.activeDonations },
     { path: "/dashboard/requests", icon: FaSearch, label: "Requests", badge: liveStats.pendingRequests },
-    { path: "/dashboard/analytics", icon: FaChartLine, label: "Analytics", badge: null },
     { path: "/dashboard/profile", icon: FaUser, label: "Profile", badge: null }
   ];
 
@@ -354,13 +351,7 @@ const Sidebar = () => {
                     <span className="text-sm font-medium text-gray-900">Request Food</span>
                   </Link>
                 )}
-                <Link
-                  to="/dashboard/analytics"
-                  className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <FaChartLine className="text-purple-600" />
-                  <span className="text-sm font-medium text-gray-900">View Analytics</span>
-                </Link>
+
               </div>
             </div>
 
